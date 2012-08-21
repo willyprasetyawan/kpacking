@@ -1,15 +1,18 @@
 
-(* object type with value ancd weight *)
+(* initialize Random with seed from /dev/urandom *)
+Random.self_init;;
+
+(* object type with value and weight *)
 type obj = {value : float; weight : float};;
 
 (* a stock of objects to pack *)
 let stock = [{value = 0.5; weight=3.0};{value = 1.0; weight=2.0}];; 
 
-(* gene type with dna and fitness *)
-type gene = {fitness : float; dna : int array};;
+(* gene type with dna and computed fitness *)
+type gene = {dna : int array ; fitness : float};;
 
 (* an example of solution *)
-let foo = {fitness = 0.0; dna = [| 0; 1 |]};;
+let foo = {dna = [| 0; 1 |] ; fitness = 0.0};;
 
 (* compute fitness *)
 let compute_fitness dna =
@@ -21,8 +24,8 @@ let compute_fitness dna =
     Array.fold_left (+.) 0. (Array.mapi get_value dna);;
 
 	
-(* generate a new random gene with dna of lenght i and relative computed fitness *)
-let random_gene length =
+(* generate a new random gene for the stock of objects *)
+let random_gene stock =
 
     (* generate a boolean dna of lenght i, note: not tail recursive *)
     let rec dna_gen = function
@@ -30,9 +33,10 @@ let random_gene length =
      | i -> Random.int 2 :: dna_gen (i-1) in
 
     (* pick dna as an Array and compute fitness *)
-    let dna = Array.of_list (dna_gen length) in
+    let dna = Array.of_list (dna_gen (List.length stock)) in
     let fitness = compute_fitness dna in
 
-    {fitness; dna};;
+    {dna; fitness};;
 
-
+(* example: generate a new random gene *)
+random_gene stock;;
