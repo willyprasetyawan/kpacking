@@ -2,8 +2,8 @@
 (* problem parameters, TODO load from file *)
 type obj = {value: float; weight: float};;
 type problem_parameters = {stock: obj list; max_weight: float};;
-let stock = [{value = 0.5; weight=3.};{value = 1.; weight=2.}];;
-let problem = {stock = stock; max_weight = 3.};;
+let example_stock = [{value = 0.5; weight=3.};{value = 1.; weight=2.}];;
+let problem = {stock = example_stock; max_weight = 3.};;
 
 (* algorithm parameters definition, TODO load from file or cl *)
 type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float};;
@@ -35,20 +35,26 @@ let random_solution stock =
     {dna; fitness};;
 
 (* check if a solution is valid (weight<=max_weight) *)
-let is_valid solution max_weight =
+let is_valid solution problem =
     (* get_weight return a weight from an index of an obj in stock and the number of times it get picked *)
     let get_weight obj_index n =
-        ((List.nth stock obj_index).weight *. (float_of_int n)) in
+        ((List.nth problem.stock obj_index).weight *. (float_of_int n)) in
     let solution_weight = Array.fold_left (+.) 0. (Array.mapi get_weight solution.dna) in
-    if solution_weight > max_weight then false
+    if solution_weight > problem.max_weight then false
                                     else true;;
-
+(* one-point mutation *)
+let mutate solution =
+    let length = Array.length solution.dna in
+    let i = Random.int length in (* index of the element to mutate *)
+    let dna = Array.concat [(Array.sub solution.dna 0 i); (Array.make 1 (Random.int 2)); (Array.sub solution.dna (i+1) (length -i -1))] in
+    let fitness = compute_fitness dna problem.stock in
+    {dna; fitness};;
 
 (* generate first population, invalid solutions are dropped *)
 let rec sixth_day = function
         0 -> []
       | i -> let rec sol candidate =
-                 if (is_valid candidate problem.max_weight) then candidate
+                 if (is_valid candidate problem) then candidate
                  else sol (random_solution problem.stock) in
              sol (random_solution problem.stock) :: sixth_day (i-1);;
 
@@ -62,3 +68,5 @@ Random.self_init;;
 
 (* example: generate initial population *)
 sixth_day params.pop_size;;
+
+print_string "Hello world!\n";;
