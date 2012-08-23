@@ -1,13 +1,24 @@
+(* initialize Random with seed from /dev/urandom *)
+Random.self_init;;
 
 (* problem parameters, TODO load from file *)
 type obj = {value: float; weight: float};;
 type problem_parameters = {stock: obj list; max_weight: float};;
-let example_stock = [{value = 0.5; weight=3.};{value = 1.; weight=2.};{value = 1.5; weight=2.}];;
-let problem = {stock = example_stock; max_weight = 3.};;
+let example_stock = [{value = 92.0; weight=23.0};
+                     {value = 57.0; weight=31.0};
+                     {value = 49.0; weight=29.0};
+                     {value = 68.0; weight=44.0};
+                     {value = 60.0; weight=53.0};
+                     {value = 43.0; weight=38.0};
+                     {value = 67.0; weight=63.0};
+                     {value = 84.0; weight=85.0};
+                     {value = 87.0; weight=89.0};
+                     {value = 72.0; weight=82.0}];;
+let problem = {stock = example_stock; max_weight = 165.0};;
 
 (* algorithm parameters definition, TODO load from file or cl *)
-type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float};;
-let params = {pop_size = 20; p_crossover = 0.95; p_mutation = 0.2}
+type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations : int};;
+let params = {pop_size = 100; p_crossover = 0.95; p_mutation = 0.2; max_iterations = 100}
 
 (* population of solutions *)
 (* solution type with dna and computed fitness *)
@@ -16,7 +27,8 @@ type solution = {dna : int array ; fitness : float};;
 (*let foo = {dna = [| 0; 1 |] ; fitness = 0.0};;*)
 
 
-(* compute fitness *)
+(* compute fitness
+   note: as value of the solution *)
 let compute_fitness dna stock =
     (* get_value return a value from an index of an obj in stock and the number of times it get picked *)
     let get_value obj_index n =
@@ -34,13 +46,16 @@ let random_solution stock =
     let fitness = compute_fitness dna stock in
     {dna; fitness};;
 
-(* check if a solution is valid (weight<=max_weight) *)
-let is_valid solution problem =
+(* compute weight of a solution *)
+let weight solution =
     (* get_weight return a weight from an index of an obj in stock and the number of times it get picked *)
     let get_weight obj_index n =
         ((List.nth problem.stock obj_index).weight *. (float_of_int n)) in
-    let solution_weight = Array.fold_left (+.) 0. (Array.mapi get_weight solution.dna) in
-    if solution_weight > problem.max_weight then false
+    Array.fold_left (+.) 0. (Array.mapi get_weight solution.dna);;
+
+(* check if a solution is valid (weight<=max_weight) *)
+let is_valid solution problem =
+    if weight solution > problem.max_weight then false
                                             else true;;
 (* point mutation *)
 let mutate solution =
@@ -61,7 +76,8 @@ let crossover parent other_parent =
 
 (* how to compare solutions *)
 let sol_compare a b =
-    compare a.fitness b.fitness;;
+    (* _inverse_ order, best fitness first *)
+    compare b.fitness a.fitness;;
 
 (* binary tournament selection
    "two men enter, one man leaves." *)
@@ -94,21 +110,52 @@ let rec sixth_day = function
                  else sol (random_solution problem.stock) in
              sol (random_solution problem.stock) :: sixth_day (i-1);;
 
-(* note: after mutation, crossover etc. check for solution validity *)
-
-(* initialize Random with seed from /dev/urandom *)
-Random.self_init;;
-
-(* example: generate a new random solution *)
-(*random_solution problem.stock;;*)
-
-(* example of sort by fitness *)
-List.sort (sol_compare) population;;
+(* print selected data about a population *)
+let print population =
+    Print.fprintf stdout "Best candidate fitness = %f" (List.nth (List.sort (sol_compare) population) 1).fitness;;
 
 (* example: generate initial population *)
-let population = sixth_day params.pop_size;;
+(*let population = sixth_day params.pop_size;;*)
 
-let a = List.nth population 0;;
-let b = List.nth population 1;;
+(* example of sort by fitness *)
+(*List.sort (sol_compare) population;;
 
-print_string "Hello world!\n";;
+print_string "Hello world!\n";;*)
+
+
+(* main optimization flow *)
+let search pdata pparams =
+
+    (* initial population *)
+    let population = sixth_day pparams.pop_size in
+    
+    (* reproduction of children implementation *)
+    let rec reproduce = function
+          0 -> []
+        | i -> let p1, p2 = thunderdome population, thunderdome population in
+               (* crossover step *)
+               let child = if (pparams.p_crossover >= Random.float 1.) then crossover p1 p2
+                                                                       else p1 in
+               (* mutation step *)
+               let child = if (pparams.p_mutation >= Random.float 1.) then mutate child
+                                                                      else child in
+               (* is the new solution a valid solution for the problem? *)
+               let child = if (is_valid child problem) then child::reproduce (i -1)
+                                                       else reproduce i in
+               child in
+
+    (* cicle until the stop condition is reached *) 
+    let rec cicle population = function
+        (* stop condition *)
+          0 -> [] 
+        | i -> (* reproduce a new generation *)
+               let population = reproduce pparams.pop_size in
+               (* return the best solution found, best, average and worst fitness of the cicle and then cicle again *)
+               let best = List.nth (List.sort (sol_compare) population) 0 in
+               [best] :: cicle population (i -1) in
+
+    (* optimization *)
+    cicle population pparams.max_iterations;;
+
+(* start *)
+search problem params;;
