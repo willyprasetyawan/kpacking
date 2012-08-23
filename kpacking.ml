@@ -116,8 +116,11 @@ let rec sixth_day = function
 
 (* print selected output data about a cicle *)
 let print_output record =
-    fprintf stdout "Best candidate fitness = %f, worst %f \n" record.best_fitness record.worst_fitness;;
-
+    (*fprintf stdout "Best candidate fitness = %f, worst %f \n" record.best_fitness record.worst_fitness;;*)
+ (*   let dna, best, worst = record.dna, record.best_fitness, record.worst_fitness in*)
+ (*   printf "%s,%f,%f\n" (String.concat "" (Array.to_list (Array.map string_of_int dna))) best worst;;*)
+    let best, worst = record.best_fitness, record.worst_fitness in
+    printf "%f,%f\n" best worst;;
 
 (* example: generate initial population *)
 (*let population = sixth_day params.pop_size;;*)
@@ -165,5 +168,6 @@ let search pdata pparams =
     cicle population pparams.max_iterations;;
 
 (* start *)
-let output = search problem params;;
-List.iter print_output output;;
+let out = search problem params;;
+fprintf stdout "#Best candidate, Best candidate fitness, Worst candidate fitness\n";;
+List.iter print_output out;;
