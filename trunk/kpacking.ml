@@ -79,6 +79,23 @@ Random.self_init;;
 
 (* example: generate initial population *)
 let population = sixth_day params.pop_size;;
+
+
+(* binary tournament selection
+   "two men enter, one man leaves." *)
+let thunderdome population =
+    let bound = List.length population in
+    (* select two _differents_ int between 0 (inclusive) and bound (esclusive)
+       note: bound _at last_ = 2 is assumed *)
+    let i, j = Random.int bound, Random.int bound in
+    let rec must_be_differents i j =
+            if j = i then must_be_differents i (Random.int bound) in
+    (* selection *)
+    let a, b = List.nth population i, List.nth population j in
+    if a.fitness >= b.fitness then a
+                              else b;;
+
+
 let a = List.nth population 0;;
 let b = List.nth population 1;;
 
