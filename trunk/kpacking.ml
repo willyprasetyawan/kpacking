@@ -50,16 +50,41 @@ let mutate solution =
     let fitness = compute_fitness dna problem.stock in
     {dna; fitness};;
 
-(* one-point crossover, children returned as a tuple
+(* one-point crossover, one child is returned
    note: only valid for parents with length at last 2 *)
 let crossover parent other_parent =
     let length = Array.length parent.dna in
     let i = (Random.int (length -1) +1) in (* index of the element _after_ which we'll do the crossover *)
     let dna_son = Array.concat [(Array.sub parent.dna 0 i); (Array.sub other_parent.dna i (length -i))] in
-    let dna_daughter = Array.concat [(Array.sub other_parent.dna 0 i); (Array.sub parent.dna i (length -i))] in
     let fitness_son = compute_fitness dna_son problem.stock in
-    let fitness_daughter = compute_fitness dna_daughter problem.stock in
-    {dna = dna_son; fitness = fitness_son}, {dna = dna_daughter; fitness = fitness_daughter};;
+    {dna = dna_son; fitness = fitness_son};;
+
+(* how to compare solutions *)
+let sol_compare a b =
+    compare a.fitness b.fitness;;
+
+(* binary tournament selection
+   "two men enter, one man leaves." *)
+let thunderdome population =
+    let bound = List.length population in
+    (* select two _differents_ int between 0 (inclusive) and bound (esclusive)
+       note: bound _at last_ = 2 is assumed *)
+    let i, j = Random.int bound, Random.int bound in
+    let rec must_be_differents i j =
+            if j = i then must_be_differents i (Random.int bound) in
+    (* selection *)
+    let a, b = List.nth population i, List.nth population j in
+    if a.fitness >= b.fitness then a
+                              else b;;
+
+(* n-way tournament selection *)
+(*
+let tournament population n =
+	let rec inner = function 
+		0 -> []
+		| i -> (List.nth population (Random.int (List.length population)))::inner (i-1) in
+	List.hd(List.sort (cmp_genes) (inner n));;
+*)
 
 (* generate first population, invalid solutions are dropped *)
 let rec sixth_day = function
@@ -77,24 +102,11 @@ Random.self_init;;
 (* example: generate a new random solution *)
 (*random_solution problem.stock;;*)
 
+(* example of sort by fitness *)
+List.sort (sol_compare) population;;
+
 (* example: generate initial population *)
 let population = sixth_day params.pop_size;;
-
-
-(* binary tournament selection
-   "two men enter, one man leaves." *)
-let thunderdome population =
-    let bound = List.length population in
-    (* select two _differents_ int between 0 (inclusive) and bound (esclusive)
-       note: bound _at last_ = 2 is assumed *)
-    let i, j = Random.int bound, Random.int bound in
-    let rec must_be_differents i j =
-            if j = i then must_be_differents i (Random.int bound) in
-    (* selection *)
-    let a, b = List.nth population i, List.nth population j in
-    if a.fitness >= b.fitness then a
-                              else b;;
-
 
 let a = List.nth population 0;;
 let b = List.nth population 1;;
