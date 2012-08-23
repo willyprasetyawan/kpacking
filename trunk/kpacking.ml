@@ -1,6 +1,8 @@
 (* initialize Random with seed from /dev/urandom *)
 Random.self_init;;
 
+open Printf;;
+
 (* problem parameters, TODO load from file *)
 type obj = {value: float; weight: float};;
 type problem_parameters = {stock: obj list; max_weight: float};;
@@ -26,6 +28,8 @@ type solution = {dna : int array ; fitness : float};;
 (* an example of solution *)
 (*let foo = {dna = [| 0; 1 |] ; fitness = 0.0};;*)
 
+(* output record *)
+type output = {best_dna: int array; best_fitness: float; worst_fitness: float};;
 
 (* compute fitness
    note: as value of the solution *)
@@ -110,9 +114,10 @@ let rec sixth_day = function
                  else sol (random_solution problem.stock) in
              sol (random_solution problem.stock) :: sixth_day (i-1);;
 
-(* print selected data about a population *)
-let print population =
-    Print.fprintf stdout "Best candidate fitness = %f" (List.nth (List.sort (sol_compare) population) 1).fitness;;
+(* print selected output data about a cicle *)
+let print_output record =
+    fprintf stdout "Best candidate fitness = %f, worst %f \n" record.best_fitness record.worst_fitness;;
+
 
 (* example: generate initial population *)
 (*let population = sixth_day params.pop_size;;*)
@@ -150,12 +155,15 @@ let search pdata pparams =
           0 -> [] 
         | i -> (* reproduce a new generation *)
                let population = reproduce pparams.pop_size in
-               (* return the best solution found, best, average and worst fitness of the cicle and then cicle again *)
+               (* return a record of output with the best solution, and the best, average, and worst fitness of the cicle,
+                  then cicle again *)
                let best = List.nth (List.sort (sol_compare) population) 0 in
-               [best] :: cicle population (i -1) in
+               let worst = List.nth (List.sort (sol_compare) population) ((List.length population) -1) in
+               {best_dna = best.dna; best_fitness = best.fitness; worst_fitness = worst.fitness} :: cicle population (i -1) in
 
-    (* optimization *)
+    (* starting the optimization *)
     cicle population pparams.max_iterations;;
 
 (* start *)
-search problem params;;
+let output = search problem params;;
+List.iter print_output output;;
