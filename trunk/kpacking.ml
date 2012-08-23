@@ -2,7 +2,7 @@
 (* problem parameters, TODO load from file *)
 type obj = {value: float; weight: float};;
 type problem_parameters = {stock: obj list; max_weight: float};;
-let example_stock = [{value = 0.5; weight=3.};{value = 1.; weight=2.}];;
+let example_stock = [{value = 0.5; weight=3.};{value = 1.; weight=2.};{value = 1.5; weight=2.}];;
 let problem = {stock = example_stock; max_weight = 3.};;
 
 (* algorithm parameters definition, TODO load from file or cl *)
@@ -41,14 +41,25 @@ let is_valid solution problem =
         ((List.nth problem.stock obj_index).weight *. (float_of_int n)) in
     let solution_weight = Array.fold_left (+.) 0. (Array.mapi get_weight solution.dna) in
     if solution_weight > problem.max_weight then false
-                                    else true;;
-(* one-point mutation *)
+                                            else true;;
+(* point mutation *)
 let mutate solution =
     let length = Array.length solution.dna in
     let i = Random.int length in (* index of the element to mutate *)
     let dna = Array.concat [(Array.sub solution.dna 0 i); (Array.make 1 (Random.int 2)); (Array.sub solution.dna (i+1) (length -i -1))] in
     let fitness = compute_fitness dna problem.stock in
     {dna; fitness};;
+
+(* one-point crossover, children returned as a tuple
+   note: only valid for parents with length at last 2 *)
+let crossover parent other_parent =
+    let length = Array.length parent.dna in
+    let i = (Random.int (length -1) +1) in (* index of the element _after_ which we'll do the crossover *)
+    let dna_son = Array.concat [(Array.sub parent.dna 0 i); (Array.sub other_parent.dna i (length -i))] in
+    let dna_daughter = Array.concat [(Array.sub other_parent.dna 0 i); (Array.sub parent.dna i (length -i))] in
+    let fitness_son = compute_fitness dna_son problem.stock in
+    let fitness_daughter = compute_fitness dna_daughter problem.stock in
+    {dna = dna_son; fitness = fitness_son}, {dna = dna_daughter; fitness = fitness_daughter};;
 
 (* generate first population, invalid solutions are dropped *)
 let rec sixth_day = function
@@ -58,7 +69,7 @@ let rec sixth_day = function
                  else sol (random_solution problem.stock) in
              sol (random_solution problem.stock) :: sixth_day (i-1);;
 
-
+(* note: after mutation, crossover etc. check for solution validity *)
 
 (* initialize Random with seed from /dev/urandom *)
 Random.self_init;;
@@ -67,6 +78,8 @@ Random.self_init;;
 (*random_solution problem.stock;;*)
 
 (* example: generate initial population *)
-sixth_day params.pop_size;;
+let population = sixth_day params.pop_size;;
+let a = List.nth population 0;;
+let b = List.nth population 1;;
 
 print_string "Hello world!\n";;
