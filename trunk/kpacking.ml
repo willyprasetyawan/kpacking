@@ -39,16 +39,6 @@ let compute_fitness dna stock =
         ((List.nth stock obj_index).value *. (float_of_int n)) in
     Array.fold_left (+.) 0. (Array.mapi get_value dna);;
 
-(* generate a new random gene for the stock of objects *)
-let random_solution stock =
-    (* generate a boolean dna of lenght i, note: not tail recursive *)
-    let rec dna_gen = function
-        0 -> []
-      | i -> Random.int 2 :: dna_gen (i-1) in
-    (* pick dna as an Array and compute fitness *)
-    let dna = Array.of_list (dna_gen (List.length stock)) in
-    let fitness = compute_fitness dna stock in
-    {dna; fitness};;
 
 (* compute weight of a solution *)
 let weight solution =
@@ -61,6 +51,45 @@ let weight solution =
 let is_valid solution problem =
     if weight solution > problem.max_weight then false
                                             else true;;
+
+
+
+(* generate a new random solution for the stock of objects
+   note: very unoptimized for problems with low knapsack capacity,
+         in that case very few solutions from random_solution are valid *)
+let random_solution stock =
+    (* generate a boolean dna of lenght i, note: not tail recursive *)
+    let rec dna_gen = function
+        0 -> []
+      | i -> Random.int 2 :: dna_gen (i-1) in
+    (* pick dna as an Array and compute fitness *)
+    let dna = Array.of_list (dna_gen (List.length stock)) in
+    let fitness = compute_fitness dna stock in
+    {dna; fitness};;
+
+(* generate a new solution with a zero-filled dna *)
+let zerofilled_solution stock =
+    let dna = Array.make (List.length stock) 0 in
+    let fitness = 0.0 in
+    {dna; fitness};;
+
+(* a different generation for a random solution, only valid solutions are built here *)
+let random_valid_solution stock =
+    (* initialize dna to all 0 *)
+    let dna = Array.make (List.length stock) 0 in
+    (* modify a random place in dna till dna length or an invalid dna *)
+    let rec add_random new_dna = function
+          0 -> new_dna
+        | i -> let old_dna = new_dna in
+               let () = Array.set new_dna (Random.int (Array.length new_dna)) (Random.int 2) in
+               let fitness = 0.0 in
+               if (is_valid {dna = new_dna; fitness} problem) then add_random dna (i -1)
+                                                else old_dna in
+    let dna = add_random dna (Array.length dna) in
+    let fitness = compute_fitness dna stock in
+    {dna; fitness};;
+
+
 (* point mutation *)
 let mutate solution =
     let length = Array.length solution.dna in
