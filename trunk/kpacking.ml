@@ -29,7 +29,7 @@ type solution = {dna : int array ; fitness : float};;
 (*let foo = {dna = [| 0; 1 |] ; fitness = 0.0};;*)
 
 (* output record *)
-type output = {best_dna: int array; best_fitness: float; worst_fitness: float};;
+type output = {best_dna: int array; best_fitness: float; mean_fitness: float; worst_fitness: float};;
 
 (* compute fitness
    note: as value of the solution *)
@@ -83,6 +83,17 @@ let sol_compare a b =
     (* _inverse_ order, best fitness first *)
     compare b.fitness a.fitness;;
 
+(* example of sort by fitness *)
+(*List.sort (sol_compare) population;;*)
+
+(* compute the mean fitness of a population of solutions *)
+let mean population =
+    let get_fitness sol =
+        sol.fitness in
+(*    let () = List.map get_fitness population;;*)
+    let sum = List.fold_left (+.) 0. (List.map get_fitness population) in
+    sum /. (float_of_int (List.length population));;
+
 (* binary tournament selection
    "two men enter, one man leaves." *)
 let thunderdome population =
@@ -106,7 +117,9 @@ let tournament population n =
 	List.hd(List.sort (cmp_genes) (inner n));;
 *)
 
-(* generate first population, invalid solutions are dropped *)
+(* generate first population, invalid solutions are dropped
+   note: very unoptimized for problems with low knapsack capacity,
+         in that case only solutions vith a few non zero are valid *)
 let rec sixth_day = function
         0 -> []
       | i -> let rec sol candidate =
@@ -114,11 +127,16 @@ let rec sixth_day = function
                  else sol (random_solution problem.stock) in
              sol (random_solution problem.stock) :: sixth_day (i-1);;
 
+(* example: generate initial population *)
+(*let population = sixth_day params.pop_size;;*)
+
+
+
 (* print selected output data about a cicle *)
 let print_output record =
     (*fprintf stdout "Best candidate fitness = %f, worst %f \n" record.best_fitness record.worst_fitness;;*)
-    let dna, best, worst = record.best_dna, record.best_fitness, record.worst_fitness in
-    printf "%s,%f,%f\n" (String.concat "" (Array.to_list (Array.map string_of_int dna))) best worst;;
+    let dna, best, mean, worst = record.best_dna, record.best_fitness, record.mean_fitness, record.worst_fitness in
+    printf "%s,%f,%f,%f\n" (String.concat "" (Array.to_list (Array.map string_of_int dna))) best mean worst;;
 
 (* return the best solution from a run *)
 let rec select_best = function
@@ -132,13 +150,6 @@ let rec select_best = function
 let print_solution sol =
     printf "dna: %s, fitness: %f" (String.concat "" (Array.to_list (Array.map string_of_int sol.dna))) sol.fitness;;
 
-(* example: generate initial population *)
-(*let population = sixth_day params.pop_size;;*)
-
-(* example of sort by fitness *)
-(*List.sort (sol_compare) population;;
-
-print_string "Hello world!\n";;*)
 
 
 (* main optimization flow *)
@@ -167,16 +178,18 @@ let search pdata pparams =
         (* stop condition *)
           0 -> [] 
         | i -> (* reproduce a new generation *)
+               (* debug and status output on stdout *)
                (*let () = print_string "\r" in*) (* return to the beginning of the line *)
                let () = print_string "generations to go: " in
                let () = print_int i in
                let () = print_string "\n" in
                let population = reproduce pparams.pop_size in
-               (* return a record of output with the best solution, and the best, average, and worst fitness of the cicle,
+               (* return a record of output with the best solution, and the best, mean, and worst fitness of the cicle,
                   then cicle again *)
                let best = List.nth (List.sort (sol_compare) population) 0 in
                let worst = List.nth (List.sort (sol_compare) population) ((List.length population) -1) in
-               {best_dna = best.dna; best_fitness = best.fitness; worst_fitness = worst.fitness} :: cicle population (i -1) in
+               let meanf = mean population in
+               {best_dna = best.dna; best_fitness = best.fitness; mean_fitness = meanf; worst_fitness = worst.fitness} :: cicle population (i -1) in
 
     (* starting the optimization *)
     cicle population pparams.max_iterations;;
@@ -188,7 +201,7 @@ let out = search problem params;;
 (* output *)
 (*print_endline "\nResults";;*)
 printf "\nPartial results\n";;
-printf "#Best candidate, Best candidate fitness, Worst candidate fitness\n";;
+printf "#Best candidate, Best candidate fitness, Mean fitness, Worst candidate fitness\n";;
 List.iter print_output out;;
 
 printf "\nBest overall solution\n";;
