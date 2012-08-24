@@ -20,7 +20,7 @@ let problem = {stock = example_stock; max_weight = 165.0};;
 
 (* algorithm parameters definition, TODO load from file or cl *)
 type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations : int};;
-let params = {pop_size = 5; p_crossover = 0.95; p_mutation = 0.2; max_iterations = 100}
+let params = {pop_size = 50; p_crossover = 0.95; p_mutation = 0.2; max_iterations = 100}
 
 (* population of solutions *)
 (* solution type with dna and computed fitness *)
@@ -120,6 +120,18 @@ let print_output record =
     let dna, best, worst = record.best_dna, record.best_fitness, record.worst_fitness in
     printf "%s,%f,%f\n" (String.concat "" (Array.to_list (Array.map string_of_int dna))) best worst;;
 
+(* return the best solution from a run *)
+let rec select_best = function
+      []   -> invalid_arg "empty list"
+    | [h]  -> {dna = h.best_dna; fitness = h.best_fitness}
+    | h::t -> let best = select_best t in 
+              if h.best_fitness < best.fitness then {dna = h.best_dna; fitness = h.best_fitness}
+                                                    else best;;
+
+(* print a solution *)
+let print_solution sol =
+    printf "dna: %s, fitness: %f" (String.concat "" (Array.to_list (Array.map string_of_int sol.dna))) sol.fitness;;
+
 (* example: generate initial population *)
 (*let population = sixth_day params.pop_size;;*)
 
@@ -155,6 +167,10 @@ let search pdata pparams =
         (* stop condition *)
           0 -> [] 
         | i -> (* reproduce a new generation *)
+               (*let () = print_string "\r" in*) (* return to the beginning of the line *)
+               let () = print_string "generations to go: " in
+               let () = print_int i in
+               let () = print_string "\n" in
                let population = reproduce pparams.pop_size in
                (* return a record of output with the best solution, and the best, average, and worst fitness of the cicle,
                   then cicle again *)
@@ -165,7 +181,21 @@ let search pdata pparams =
     (* starting the optimization *)
     cicle population pparams.max_iterations;;
 
-(* start *)
+
+(* start search *)
 let out = search problem params;;
-fprintf stdout "#Best candidate, Best candidate fitness, Worst candidate fitness\n";;
+
+(* output *)
+(*print_endline "\nResults";;*)
+printf "\nPartial results\n";;
+printf "#Best candidate, Best candidate fitness, Worst candidate fitness\n";;
 List.iter print_output out;;
+
+printf "\nBest overall solution\n";;
+print_solution (select_best out);;
+printf "\n";;
+
+
+
+
+
