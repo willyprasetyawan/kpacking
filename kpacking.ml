@@ -20,7 +20,7 @@ let problem = {stock = example_stock; max_weight = 165.0};;
 
 (* algorithm parameters definition, TODO load from file or cl *)
 type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations : int};;
-let params = {pop_size = 100; p_crossover = 0.95; p_mutation = 0.2; max_iterations = 100}
+let params = {pop_size = 5; p_crossover = 0.95; p_mutation = 0.2; max_iterations = 100}
 
 (* population of solutions *)
 (* solution type with dna and computed fitness *)
@@ -117,10 +117,8 @@ let rec sixth_day = function
 (* print selected output data about a cicle *)
 let print_output record =
     (*fprintf stdout "Best candidate fitness = %f, worst %f \n" record.best_fitness record.worst_fitness;;*)
- (*   let dna, best, worst = record.dna, record.best_fitness, record.worst_fitness in*)
- (*   printf "%s,%f,%f\n" (String.concat "" (Array.to_list (Array.map string_of_int dna))) best worst;;*)
-    let best, worst = record.best_fitness, record.worst_fitness in
-    printf "%f,%f\n" best worst;;
+    let dna, best, worst = record.best_dna, record.best_fitness, record.worst_fitness in
+    printf "%s,%f,%f\n" (String.concat "" (Array.to_list (Array.map string_of_int dna))) best worst;;
 
 (* example: generate initial population *)
 (*let population = sixth_day params.pop_size;;*)
