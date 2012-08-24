@@ -90,7 +90,6 @@ let sol_compare a b =
 let mean population =
     let get_fitness sol =
         sol.fitness in
-(*    let () = List.map get_fitness population;;*)
     let sum = List.fold_left (+.) 0. (List.map get_fitness population) in
     sum /. (float_of_int (List.length population));;
 
@@ -138,13 +137,14 @@ let print_output record =
     let dna, best, mean, worst = record.best_dna, record.best_fitness, record.mean_fitness, record.worst_fitness in
     printf "%s,%f,%f,%f\n" (String.concat "" (Array.to_list (Array.map string_of_int dna))) best mean worst;;
 
-(* return the best solution from a run *)
+(* return the best solution from a run from out *)
 let rec select_best = function
       []   -> invalid_arg "empty list"
     | [h]  -> {dna = h.best_dna; fitness = h.best_fitness}
-    | h::t -> let best = select_best t in 
-              if h.best_fitness < best.fitness then {dna = h.best_dna; fitness = h.best_fitness}
-                                                    else best;;
+    | h::t -> let best = (select_best t) in
+              let now = {dna = h.best_dna; fitness = h.best_fitness} in
+              if now.fitness > best.fitness then now
+                                            else best;;
 
 (* print a solution *)
 let print_solution sol =
