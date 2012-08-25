@@ -38,13 +38,14 @@ let rec explode sep str =
         String.sub str 0 i :: explode sep (String.sub str (i+1) (String.length str -i -1))
     with Not_found -> [str];;
 
-(* load a file as a list of string *)
+(* load a file as a list of string, skip lines beginning with # *)
 let open_file file =
     let f = open_in file in
     let output = ref [] in
     try
         while true do
-            output := input_line f :: !output
+            let l = input_line f in
+            if (l.[0] != '#') then  output := l :: !output
         done; []
     with End_of_file -> close_in f;
     List.rev !output;;
@@ -61,28 +62,12 @@ let new_object l =
     {value = float_of_string (List.hd o); weight = float_of_string (List.nth o 1)};;
 
 let stock = List.map new_object (List.tl lines);;
-    
 let problem = {stock; max_weight};;
+
     
-        
-        
-                 
-(*
-let example_stock = [{value = 92.0; weight=23.0};
-                     {value = 57.0; weight=31.0};
-                     {value = 49.0; weight=29.0};
-                     {value = 68.0; weight=44.0};
-                     {value = 60.0; weight=53.0};
-                     {value = 43.0; weight=38.0};
-                     {value = 67.0; weight=63.0};
-                     {value = 84.0; weight=85.0};
-                     {value = 87.0; weight=89.0};
-                     {value = 72.0; weight=82.0}];;
-let problem = {stock = example_stock; max_weight = capacity};;
-*)
 
 (* if mutation chance is not set, by default we take 1/(num objects) *)
-	if (!opt_mutation = 999.0) then opt_mutation := (1.0 /. float_of_int (List.length problem.stock));;
+if (!opt_mutation = 999.0) then opt_mutation := (1.0 /. float_of_int (List.length problem.stock));;
 
 (* algorithm parameters definition, from cli or defaults *)
 type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations : int};;
