@@ -1,7 +1,34 @@
+open Printf;;
+
+
+(* cli arguments *)
+let opt_pop_size = ref 500;;
+let opt_crossover = ref 0.95;;
+let opt_mutation = ref 0.2;;
+let opt_max_iterations = ref 100;;
+let opt_file = ref "";;
+let verbose = ref false;;
+
+let usage = "usage: " ^ Sys.argv.(0) ^ " -p population_size -c crossover_chance [-m mutation_chance] -i iterations -v verbose -f file";;
+ 
+let speclist = [
+    ("-p", Arg.Int (fun p -> opt_pop_size := p), ": population size [default 50]");
+    ("-c", Arg.Float (fun c -> opt_crossover := c), ": chance of crossover [default 0.95]");
+    ("-m", Arg.Float (fun m -> opt_mutation := m), ": chance of mutation [default 0.2]");
+    ("-i", Arg.Int (fun i -> opt_max_iterations := i), ": iterations [default 100]");
+    ("-f", Arg.String (fun f -> opt_file := f), ": file with problem data");
+    ("-v", Arg.Unit   (fun () -> verbose := true), ": verbose output");
+  ]
+ 
+(* read cli arguments *)
+let () = Arg.parse speclist (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) usage;;
+
+
+
 (* initialize Random with seed from /dev/urandom *)
 Random.self_init;;
 
-open Printf;;
+
 
 (* problem parameters, TODO load from file *)
 type obj = {value: float; weight: float};;
@@ -18,9 +45,9 @@ let example_stock = [{value = 92.0; weight=23.0};
                      {value = 72.0; weight=82.0}];;
 let problem = {stock = example_stock; max_weight = 165.0};;
 
-(* algorithm parameters definition, TODO load from file or cl *)
+(* algorithm parameters definition, from cli or defaults *)
 type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations : int};;
-let params = {pop_size = 50; p_crossover = 0.95; p_mutation = 0.2; max_iterations = 100}
+let params = {pop_size = !opt_pop_size; p_crossover = !opt_crossover; p_mutation = !opt_mutation; max_iterations = !opt_max_iterations}
 
 (* population of solutions *)
 (* solution type with dna and computed fitness *)
@@ -208,10 +235,8 @@ let search pdata pparams =
           0 -> [] 
         | i -> (* reproduce a new generation *)
                (* debug and status output on stdout *)
-               (*let () = print_string "\r" in*) (* return to the beginning of the line *)
-               let () = print_string "generations to go: " in
-               let () = print_int i in
-               let () = print_string "\n" in
+               if (!verbose) then printf "generations to go: %4d\r%!" i;
+
                let population = reproduce pparams.pop_size in
                (* return a record of output with the best solution, and the best, mean, and worst fitness of the cicle,
                   then cicle again *)
@@ -222,6 +247,7 @@ let search pdata pparams =
 
     (* starting the optimization *)
     cicle population pparams.max_iterations;;
+
 
 
 (* start search *)
