@@ -201,13 +201,16 @@ let tournament population n =
 	List.hd(List.sort (cmp_genes) (inner n));;
 *)
 
+(* TODO select first generation strategy by option *)
+let random_solution = zerofilled_solution;;
+
 (* generate first population, invalid solutions are dropped
    note: very unoptimized for problems with low knapsack capacity,
          in that case only solutions vith a few non zero are valid *)
 let rec sixth_day = function
         0 -> []
       | i -> let rec sol candidate =
-                 if (is_valid candidate problem) then candidate
+                 if (is_valid candidate problem) then (if (!verbose) then printf "candidates: %4d\r%!" i; candidate)
                  else sol (random_solution problem.stock) in
              sol (random_solution problem.stock) :: sixth_day (i-1);;
 
@@ -244,9 +247,9 @@ let search pdata pparams =
     let population = sixth_day pparams.pop_size in
     
     (* reproduction of children implementation *)
-    let rec reproduce = function
+    let rec reproduce old_generation = function
           0 -> []
-        | i -> let p1, p2 = thunderdome population, thunderdome population in
+        | i -> let p1, p2 = thunderdome old_generation, thunderdome old_generation in
                (* crossover step *)
                let child = if (pparams.p_crossover >= Random.float 1.) then crossover p1 p2
                                                                        else p1 in
@@ -254,8 +257,8 @@ let search pdata pparams =
                let child = if (pparams.p_mutation >= Random.float 1.) then mutate child
                                                                       else child in
                (* is the new solution a valid solution for the problem? *)
-               let child = if (is_valid child problem) then child::reproduce (i -1)
-                                                       else reproduce i in
+               let child = if (is_valid child problem) then child::reproduce old_generation (i -1)
+                                                       else reproduce old_generation i in
                child in
 
     (* cicle until the stop condition is reached *) 
@@ -266,7 +269,7 @@ let search pdata pparams =
                (* debug and status output on stdout *)
                if (!verbose) then printf "generations to go: %6d\r%!" i;
 
-               let population = reproduce pparams.pop_size in
+               let population = reproduce population pparams.pop_size in
                (* return a record of output with the best solution, and the best, mean, and worst fitness of the cicle,
                   then cicle again *)
                let best = List.nth (List.sort (sol_compare) population) 0 in
@@ -280,7 +283,7 @@ let search pdata pparams =
 
 
 (* initialize Random with seed from /dev/urandom *)
-Random.self_init;;
+Random.self_init ();;
 
 (* start search *)
 let out = search problem params;;
