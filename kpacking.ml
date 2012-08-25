@@ -4,7 +4,7 @@ open Printf;;
 (* cli arguments *)
 let opt_pop_size = ref 50;;
 let opt_crossover = ref 0.95;;
-let opt_mutation = ref 999.0;;
+let opt_mutation = ref 999.0;; (* not really, we don't know yet how many object are in the problem file *)
 let opt_max_iterations = ref 100;;
 let opt_file = ref "";;
 let verbose = ref false;;
@@ -25,9 +25,49 @@ let () = Arg.parse speclist (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) u
 
 
 
-(* problem parameters, TODO load from file *)
+(* problem parameters, loaded from file *)
 type obj = {value: float; weight: float};;
 type problem_parameters = {stock: obj list; max_weight: float};;
+
+(* load problem from file *)
+
+(* explode a string to a list of words *)
+let rec explode sep str =
+    try
+        let i = String.index str sep in
+        String.sub str 0 i :: explode sep (String.sub str (i+1) (String.length str -i -1))
+    with Not_found -> [str];;
+
+(* load a file as a list of string *)
+let open_file file =
+    let f = open_in file in
+    let output = ref [] in
+    try
+        while true do
+            output := input_line f :: !output
+        done; []
+    with End_of_file -> close_in f;
+    List.rev !output;;
+
+let lines = open_file !opt_file;;
+
+(* try to interpret it *)
+(* first line, weight capacity *)
+let max_weight = float_of_string (List.hd lines);;
+    
+(* from object line to object *)
+let new_object l =
+    let o = explode ' ' l in
+    {value = float_of_string (List.hd o); weight = float_of_string (List.nth o 1)};;
+
+let stock = List.map new_object (List.tl lines);;
+    
+let problem = {stock; max_weight};;
+    
+        
+        
+                 
+(*
 let example_stock = [{value = 92.0; weight=23.0};
                      {value = 57.0; weight=31.0};
                      {value = 49.0; weight=29.0};
@@ -38,10 +78,11 @@ let example_stock = [{value = 92.0; weight=23.0};
                      {value = 84.0; weight=85.0};
                      {value = 87.0; weight=89.0};
                      {value = 72.0; weight=82.0}];;
-let problem = {stock = example_stock; max_weight = 165.0};;
+let problem = {stock = example_stock; max_weight = capacity};;
+*)
 
 (* if mutation chance is not set, by default we take 1/(num objects) *)
-if (!opt_mutation = 999.0) then opt_mutation := (1.0 /. float_of_int (List.length problem.stock));;
+	if (!opt_mutation = 999.0) then opt_mutation := (1.0 /. float_of_int (List.length problem.stock));;
 
 (* algorithm parameters definition, from cli or defaults *)
 type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations : int};;
