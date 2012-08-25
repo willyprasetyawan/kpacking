@@ -2,31 +2,26 @@ open Printf;;
 
 
 (* cli arguments *)
-let opt_pop_size = ref 500;;
+let opt_pop_size = ref 50;;
 let opt_crossover = ref 0.95;;
-let opt_mutation = ref 0.2;;
+let opt_mutation = ref 999.0;;
 let opt_max_iterations = ref 100;;
 let opt_file = ref "";;
 let verbose = ref false;;
 
-let usage = "usage: " ^ Sys.argv.(0) ^ " -p population_size -c crossover_chance [-m mutation_chance] -i iterations -v verbose -f file";;
+let usage = "usage: " ^ Sys.argv.(0) ^ " [-v] [-p population_size] [-c crossover_chance] [-m mutation_chance] [-i iterations] -f file";;
  
 let speclist = [
+    ("-v", Arg.Unit (fun () -> verbose := true), ": verbose output");
     ("-p", Arg.Int (fun p -> opt_pop_size := p), ": population size [default 50]");
     ("-c", Arg.Float (fun c -> opt_crossover := c), ": chance of crossover [default 0.95]");
-    ("-m", Arg.Float (fun m -> opt_mutation := m), ": chance of mutation [default 0.2]");
+    ("-m", Arg.Float (fun m -> opt_mutation := m), ": chance of mutation [default 1/(num objects)]");
     ("-i", Arg.Int (fun i -> opt_max_iterations := i), ": iterations [default 100]");
     ("-f", Arg.String (fun f -> opt_file := f), ": file with problem data");
-    ("-v", Arg.Unit   (fun () -> verbose := true), ": verbose output");
   ]
  
 (* read cli arguments *)
 let () = Arg.parse speclist (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) usage;;
-
-
-
-(* initialize Random with seed from /dev/urandom *)
-Random.self_init;;
 
 
 
@@ -45,9 +40,15 @@ let example_stock = [{value = 92.0; weight=23.0};
                      {value = 72.0; weight=82.0}];;
 let problem = {stock = example_stock; max_weight = 165.0};;
 
+(* if mutation chance is not set, by default we take 1/(num objects) *)
+if (!opt_mutation = 999.0) then opt_mutation := (1.0 /. float_of_int (List.length problem.stock));;
+
 (* algorithm parameters definition, from cli or defaults *)
 type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations : int};;
 let params = {pop_size = !opt_pop_size; p_crossover = !opt_crossover; p_mutation = !opt_mutation; max_iterations = !opt_max_iterations}
+let () = if (!verbose) then printf "population size = %d\nchance of crossover = %f\nchance of mutation = %f\niterations = %d\n\n%!"
+                           params.pop_size params.p_crossover params.p_mutation params.max_iterations;
+
 
 (* population of solutions *)
 (* solution type with dna and computed fitness *)
@@ -58,6 +59,8 @@ type solution = {dna : int array ; fitness : float};;
 (* output record *)
 type output = {best_dna: int array; best_fitness: float; mean_fitness: float; worst_fitness: float};;
 
+
+
 (* compute fitness
    note: as value of the solution *)
 let compute_fitness dna stock =
@@ -65,7 +68,6 @@ let compute_fitness dna stock =
     let get_value obj_index n =
         ((List.nth stock obj_index).value *. (float_of_int n)) in
     Array.fold_left (+.) 0. (Array.mapi get_value dna);;
-
 
 (* compute weight of a solution *)
 let weight solution =
@@ -115,6 +117,7 @@ let random_valid_solution stock =
     let dna = add_random dna (Array.length dna) in
     let fitness = compute_fitness dna stock in
     {dna; fitness};;
+
 
 
 (* point mutation *)
@@ -235,7 +238,7 @@ let search pdata pparams =
           0 -> [] 
         | i -> (* reproduce a new generation *)
                (* debug and status output on stdout *)
-               if (!verbose) then printf "generations to go: %4d\r%!" i;
+               if (!verbose) then printf "generations to go: %6d\r%!" i;
 
                let population = reproduce pparams.pop_size in
                (* return a record of output with the best solution, and the best, mean, and worst fitness of the cicle,
@@ -249,6 +252,9 @@ let search pdata pparams =
     cicle population pparams.max_iterations;;
 
 
+
+(* initialize Random with seed from /dev/urandom *)
+Random.self_init;;
 
 (* start search *)
 let out = search problem params;;
