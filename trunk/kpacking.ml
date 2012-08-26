@@ -7,6 +7,7 @@ let opt_crossover = ref 0.95;;
 let opt_mutation = ref 999.0;; (* not really, we don't know yet how many object are in the problem file *)
 let opt_max_iterations = ref 100;;
 let opt_file = ref "";;
+let opt_first_generation_style = ref 1;;
 let verbose = ref false;;
 
 let usage = "usage: " ^ Sys.argv.(0) ^ " [-v] [-p population_size] [-c crossover_chance] [-m mutation_chance] [-i iterations] -f file";;
@@ -17,6 +18,7 @@ let speclist = [
     ("-c", Arg.Float (fun c -> opt_crossover := c), ": chance of crossover [default 0.95]");
     ("-m", Arg.Float (fun m -> opt_mutation := m), ": chance of mutation [default 1/(num objects)]");
     ("-i", Arg.Int (fun i -> opt_max_iterations := i), ": iterations [default 100]");
+    ("-g", Arg.Int (fun g -> opt_first_generation_style := g), ": first generation style [0, 1 or 2. Default 1 for random genes (0 = zero filled, 2 = other style random gene generation)]");
     ("-f", Arg.String (fun f -> opt_file := f), ": file with problem data");
   ]
  
@@ -70,10 +72,9 @@ let problem = {stock; max_weight};;
 if (!opt_mutation = 999.0) then opt_mutation := (1.0 /. float_of_int (List.length problem.stock));;
 
 (* algorithm parameters definition, from cli or defaults *)
-type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations : int};;
-let params = {pop_size = !opt_pop_size; p_crossover = !opt_crossover; p_mutation = !opt_mutation; max_iterations = !opt_max_iterations}
-let () = if (!verbose) then printf "population size = %d\nchance of crossover = %f\nchance of mutation = %f\niterations = %d\n\n%!"
-                           params.pop_size params.p_crossover params.p_mutation params.max_iterations;
+type algorithm_parameters = {pop_size: int; p_crossover: float; p_mutation: float; max_iterations: int; first_population_style: int};;
+let params = {pop_size = !opt_pop_size; p_crossover = !opt_crossover; p_mutation = !opt_mutation; max_iterations = !opt_max_iterations; first_population_style = !opt_first_generation_style}
+let () = if (!verbose) then printf "population size = %d\nchance of crossover = %f\nchance of mutation = %f\niterations = %d\nfirst generation style = %d\n\n%!" params.pop_size params.p_crossover params.p_mutation params.max_iterations params.first_population_style;
 
 
 (* population of solutions *)
@@ -135,7 +136,7 @@ let random_valid_solution stock =
     (* modify a random place in dna till dna length or an invalid dna *)
     let rec add_random new_dna = function
           0 -> new_dna
-        | i -> let old_dna = new_dna in
+        | i -> let old_dna = (Array.copy new_dna) in
                let () = Array.set new_dna (Random.int (Array.length new_dna)) (Random.int 2) in
                let fitness = 0.0 in
                if (is_valid {dna = new_dna; fitness} problem) then add_random dna (i -1)
@@ -201,18 +202,21 @@ let tournament population n =
 	List.hd(List.sort (cmp_genes) (inner n));;
 *)
 
-(* TODO select first generation strategy by option *)
-let random_solution = zerofilled_solution;;
+(* select first generation strategy by option *)
+exception Fail of string;;
+let first_generation_solution = match params.first_population_style with
+                                    0 -> zerofilled_solution
+                                  | 1 -> random_solution
+                                  | 2 -> random_valid_solution
+                                  | i -> raise (Fail "wrong argument; option `-g' expects 0, 1 or 2");;
 
-(* generate first population, invalid solutions are dropped
-   note: very unoptimized for problems with low knapsack capacity,
-         in that case only solutions vith a few non zero are valid *)
-let rec sixth_day = function
+(* generate first population, invalid solutions are dropped *)
+let rec sixth_day generator = function
         0 -> []
       | i -> let rec sol candidate =
                  if (is_valid candidate problem) then (if (!verbose) then printf "candidates: %4d\r%!" i; candidate)
-                 else sol (random_solution problem.stock) in
-             sol (random_solution problem.stock) :: sixth_day (i-1);;
+                 else sol (generator problem.stock) in
+             sol (generator problem.stock) :: sixth_day generator (i-1);;
 
 (* example: generate initial population *)
 (*let population = sixth_day params.pop_size;;*)
@@ -244,7 +248,7 @@ let print_solution sol =
 let search pdata pparams =
 
     (* initial population *)
-    let population = sixth_day pparams.pop_size in
+    let population = sixth_day first_generation_solution pparams.pop_size in
     
     (* reproduction of children implementation *)
     let rec reproduce old_generation = function
