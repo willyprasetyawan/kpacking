@@ -174,12 +174,17 @@ let random_valid_solution stock =
 
 
 (* point mutation *)
-let mutate solution =
+let mutate solution p_mutation =
   let length = Array.length solution.dna in
-  let i = Random.int length in (* index of the element to mutate *)
-  let dna = Array.concat [(Array.sub solution.dna 0 i); 
-                          (Array.make 1 (Random.int 2)); 
-                          (Array.sub solution.dna (i+1) (length -i -1))] in
+  let rec inner dna = function
+      0 -> dna
+    | i -> let new_dna = if (p_mutation >= Random.float 1.)
+                         then Array.concat [(Array.sub solution.dna 0 i);
+                              (Array.make 1 (Random.int 2));
+                              (Array.sub solution.dna (i+1) (length -i -1))]
+                         else dna in
+                         inner new_dna (i-1) in
+  let dna = inner solution.dna (length - 1) in
   let fitness = compute_fitness dna problem.stock in
   {dna; fitness};;
 
@@ -279,8 +284,7 @@ let search pdata pparams =
            let child = if (pparams.p_crossover >= Random.float 1.) 
              then crossover p1 p2 else p1 in
            (* mutation step *)
-           let child = if (pparams.p_mutation >= Random.float 1.)
-             then mutate child else child in
+           let child = mutate child pparams.p_mutation in
            (* is the new solution a valid solution for the problem? *)
            let child = if (is_valid child problem)
              then child::reproduce old_generation (i -1)
