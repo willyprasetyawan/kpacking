@@ -8,6 +8,7 @@ let opt_mutation = ref 999.0;; (* not really, we don't know yet how many object
 let opt_max_iterations = ref 100;;
 let opt_file = ref "";;
 let opt_first_generation_style = ref 1;;
+let opt_solution = ref 0.0;;
 let verbose = ref false;;
 
 let usage = "usage: " ^ Sys.argv.(0) ^ " [-v] [-p population_size] \
@@ -26,6 +27,8 @@ let speclist = [
   ("-g", Arg.Int (fun g -> opt_first_generation_style := g), ": first \
     generation style [0, 1 or 2. Default 1 for random genes (0 = zero filled, \
                                     2 = other style random gene generation)]");
+  ("-s", Arg.Float (fun s -> opt_solution := s), ": optimal known solution \
+                 (the program will exits if found before the last iteration)");
   ("-f", Arg.String (fun f -> opt_file := f), ": file with problem data");
 ]
  
@@ -84,12 +87,14 @@ type algorithm_parameters = {pop_size: int;
                              p_crossover: float;
                              p_mutation: float;
                              max_iterations: int;
-                             first_population_style: int};;
+                             first_population_style: int;
+                             solution: float};;
 let params = {pop_size = !opt_pop_size;
               p_crossover = !opt_crossover; 
               p_mutation = !opt_mutation;
               max_iterations = !opt_max_iterations;
-              first_population_style = !opt_first_generation_style};;
+              first_population_style = !opt_first_generation_style;
+              solution = !opt_solution};;
 let () = if (!verbose) then printf "population size = %d\n\
                                     chance of crossover = %f\n\
                                     chance of mutation = %f\n\
@@ -255,13 +260,14 @@ let print_output record =
   printf "%s,%f,%f,%f\n" (String.concat "" (Array.to_list (Array.map 
                                          string_of_int dna))) best mean worst;;
 
-(* return the best solution from a run from out *)
-let rec select_best = function
+(* return the best solution and the iteration when it was found from a run
+   as a tuple from out (note: out has inverted generation) *)
+let rec select_best i = function
     []   -> invalid_arg "empty list"
-  | [h]  -> {dna = h.best_dna; fitness = h.best_fitness}
-  | h::t -> let best = (select_best t) in
-            let now = {dna = h.best_dna; fitness = h.best_fitness} in
-            if now.fitness > best.fitness then now else best;;
+  | [h]  -> {dna = h.best_dna; fitness = h.best_fitness}, i +1
+  | h::t -> let best = select_best (i +1) t in
+            let now = {dna = h.best_dna; fitness = h.best_fitness}, i in
+            if (fst now).fitness > (fst best).fitness then now else best;;
 
 (* print a solution *)
 let print_solution sol =
@@ -311,9 +317,14 @@ let search pdata pparams =
                                    best fitness: %8.2f\r%!" i new_best_fitness;
            let worst = List.nth sorted ((List.length population) -1) in
            let meanf = mean population in
-           {best_dna = best.dna; best_fitness = best.fitness; 
-            mean_fitness = meanf; worst_fitness = worst.fitness} :: 
-            cicle population new_best_fitness (i -1) in
+
+           (* exit if optimal solution is found or start next iteration *)
+           if (pparams.solution!=0.0 && new_best_fitness=pparams.solution)
+              then {best_dna = best.dna; best_fitness = best.fitness; 
+                    mean_fitness = meanf; worst_fitness = worst.fitness} :: []
+              else {best_dna = best.dna; best_fitness = best.fitness; 
+                    mean_fitness = meanf; worst_fitness = worst.fitness} :: 
+                    cicle population new_best_fitness (i -1) in
 
   (* starting the optimization *)
   if (!verbose) then printf "generations to go: %6d\r%!" pparams.max_iterations;
@@ -330,10 +341,14 @@ let out = search problem params;;
 (* output *)
 (*print_endline "\nResults";;*)
 printf "\nPartial results\n";;
-printf "#Best candidate, Best candidate fitness, Mean fitness, Worst candidate fitness\n";;
+printf "#Best candidate, Best candidate fitness, Mean fitness, Worst \
+                                                         candidate fitness\n";;
 List.iter print_output out;;
 
+(* note: out is in reverse order *)
+let best_out = select_best 0 out;;
 printf "\nBest overall solution\n";;
-print_solution (select_best out);;
+printf "iteration: %d " (snd best_out);;
+print_solution (fst best_out);
 printf "\n";;
 
