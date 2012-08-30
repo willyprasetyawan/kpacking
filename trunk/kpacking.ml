@@ -292,26 +292,32 @@ let search pdata pparams =
            child in
 
   (* cicle until the stop condition is reached *) 
-  let rec cicle population = function
+  let rec cicle population best_fitness = function
     (* stop condition *)
       0 -> [] 
     | i -> (* reproduce a new generation *)
-           (* debug and status output on stdout *)
-           if (!verbose) then printf "generations to go: %6d\r%!" i;
-
            let population = reproduce population pparams.pop_size in
            (* return a record of output with the best solution, and the best,
-              mean, and worst fitness of the cicle, then cicle again *)
-           let best = List.nth (List.sort (sol_compare) population) 0 in
-           let worst = List.nth (List.sort (sol_compare) population) 
-                                               ((List.length population) -1) in
+              mean, and worst fitness of the cicle, then cicle again
+              note: may be worth to take beast and worst with a single scan
+                    of the list *)
+           let sorted = List.sort (sol_compare) population in
+           let best = List.hd sorted in
+           let new_best_fitness = if best_fitness > best.fitness
+                              then best_fitness
+                              else best.fitness in            
+           (* debug and status output on stdout *)
+           if (!verbose) then printf "generations to go: %6d, \
+                                   best fitness: %8.2f\r%!" i new_best_fitness;
+           let worst = List.nth sorted ((List.length population) -1) in
            let meanf = mean population in
            {best_dna = best.dna; best_fitness = best.fitness; 
             mean_fitness = meanf; worst_fitness = worst.fitness} :: 
-            cicle population (i -1) in
+            cicle population new_best_fitness (i -1) in
 
   (* starting the optimization *)
-  cicle population pparams.max_iterations;;
+  if (!verbose) then printf "generations to go: %6d\r%!" pparams.max_iterations;
+  cicle population 0. pparams.max_iterations;;
 
 
 
