@@ -75,7 +75,7 @@ let new_object l =
    weight = float_of_string (List.nth o 1)};;
 
 let stock = List.map new_object (List.tl lines);;
-let problem = {stock; max_weight};;
+let problem = {stock = stock; max_weight = max_weight};;
 
 
 (* if mutation chance is not set, by default we take 1/(num objects) *)
@@ -95,7 +95,7 @@ let params = {pop_size = !opt_pop_size;
               max_iterations = !opt_max_iterations;
               first_population_style = !opt_first_generation_style;
               solution = !opt_solution};;
-let () = if (!verbose) then printf "population size = %d\
+let () = if (!verbose) then printf "population size = %d\n\
                                     chance of crossover = %f\n\
                                     chance of mutation = %f\n\
                                     iterations = %d\n\
@@ -150,13 +150,13 @@ let random_solution stock =
   (* pick dna as an Array and compute fitness *)
   let dna = Array.of_list (dna_gen (List.length stock)) in
   let fitness = compute_fitness dna stock in
-  {dna; fitness};;
+  {dna = dna; fitness = fitness};;
 
 (* generate a new solution with a zero-filled dna *)
 let zerofilled_solution stock =
   let dna = Array.make (List.length stock) 0 in
   let fitness = 0.0 in
-  {dna; fitness};;
+  {dna = dna; fitness = fitness};;
 
 (* a different generation for a random solution, 
    build only valid solutions iteratively *)
@@ -170,12 +170,12 @@ let random_valid_solution stock =
            let () = Array.set new_dna (Random.int (Array.length new_dna))
                                                               (Random.int 2) in
            let fitness = 0.0 in
-           if (is_valid {dna = new_dna; fitness} problem)
+           if (is_valid {dna = new_dna; fitness = fitness} problem)
              then add_random new_dna (i -1)
              else old_dna in
   let dna = add_random dna (Array.length dna) in
   let fitness = compute_fitness dna stock in
-  {dna; fitness};;
+  {dna = dna; fitness = fitness};;
 
 
 (* point mutation *)
@@ -191,7 +191,7 @@ let mutate solution p_mutation =
                          inner new_dna (i-1) in
   let dna = inner solution.dna (length - 1) in
   let fitness = compute_fitness dna problem.stock in
-  {dna; fitness};;
+  {dna = dna; fitness = fitness};;
 
 (* one-point crossover, one child is returned
    note: only valid for parents with length at last 2 *)
