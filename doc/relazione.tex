@@ -1,0 +1,107 @@
+\documentclass[11pt,a4paper]{article}
+% lingua italiana e input in utf8
+\usepackage[italian]{babel}
+\usepackage[utf8x]{inputenc}
+
+% grafica
+\usepackage{graphicx}
+% sottofigure
+\usepackage{subfig}
+% riferimenti alle figure con: ..si veda la fig.~\vref{f5}
+% che scrive tipo ``si veda la fig. 3.1 nella pagina successiva'' o ``si veda la fig. 3.1 a pagina 24''
+% per le equazione usare: ..grazie all'eq.~\eqref{e2}
+\usepackage{varioref}
+% rientro anche nel primo paragrafo dei capitoli
+\usepackage{indentfirst}
+% formatta i numeri separando le migliaia con uno spazio breve con \numprint
+\usepackage{numprint}
+% suppress page numbers and headings on empty pages
+\usepackage{emptypage}
+% hyperref con le impostazioni di compilazione per generare i link ipertestuali nel documento
+\usepackage[pdfborder={0 0 0},pdftitle={kpacking, un solver genetico per il problema dello zaino},pdfauthor={Claudio Tanci},pdfkeywords={zaino, knapsack, genetic algorithm}]{hyperref}
+
+% codice
+\usepackage{underscore}
+\usepackage{listings}
+%\usepackage{xcolor}
+%\usepackage{textcomp}
+\usepackage{color}
+
+
+\lstset{ %
+%language=Clean,                % choose the language of the code
+language=Caml,
+defaultdialect=[Objective]Caml,
+basicstyle=\ttfamily\tiny,
+%basicstyle=\tiny,              % the size of the fonts that are used for the code
+%basicstyle=\small,
+numbers=left,                  % where to put the line-numbers
+numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
+stepnumber=10,                  % the step between two line-numbers. If it is 1 each line will be numbered
+numbersep=5pt,                  % how far the line-numbers are from the code
+backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
+showspaces=false,               % show spaces adding particular underscores
+showstringspaces=false,         % underline spaces within strings
+showtabs=false,                 % show tabs within strings adding particular underscores
+%frame=single,                  % adds a frame around the code
+%frame=leftline,
+tabsize=2,                      % sets default tabsize to 2 spaces
+captionpos=b,                   % sets the caption-position to bottom
+breaklines=true,                % sets automatic line breaking
+breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+escapeinside={\%}{)},           % if you want to add a comment within your code
+xleftmargin=0.5cm,
+alsoletter={.-="},
+morekeywords={\\,\^,printf}
+}
+
+% indice analitico
+%\usepackage{makeidx}
+%\makeindex
+
+%\usepackage{ucs}
+%\usepackage{amsmath}
+%\usepackage{amsfonts}
+%\usepackage{amssymb}
+
+\title{kpacking\\
+\Large Un solver genetico per il problema dello zaino 0-1\\[-0.8ex]}
+\author{Claudio Tanci\\
+\small \texttt{claudio@tanci.it}}
+
+%\date{April 1, 2011} 
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+
+\end{abstract} 
+
+\section{Il problema dello zaino}
+
+\section{Algoritmi genetici}
+
+\section{Implementazione}
+
+\section{Complessità}
+%A few tests was performed using Xen 4.0 and PCIE pass through as an initial attempt to asses viability and to evaluate our configuration.
+%Fig.~\vref{simpleOclVector.gpu.fig} shows the result of a simple repeated linear algebra test on \textsc{AMD FireStream 9270} in a real (orange) and virtual (blue) environment (less is better). Increasing the vector length the performances on the virtual machine progressively reaches the real machine performances even if with an extended margin of error.
+%\begin{figure}
+%\centering
+%\includegraphics[width=.9\textwidth]{./img/simpleOclVector-GPU}
+%\caption{Linear algebra arithmetic test - GPU comparison}
+%\label{simpleOclVector.gpu.fig}
+%\end{figure}
+
+\section{Test}
+
+\section{Conclusioni}
+
+
+\appendix
+\section{Sorgenti completi}
+\lstinputlisting{../kpacking.ml}
+
+\end{document}
