@@ -348,7 +348,7 @@ List.iter print_output out;;
 (* note: out is in reverse order *)
 let best_out = select_best 0 out;;
 printf "\nBest overall solution\n";;
-printf "iteration: %d " (snd best_out);;
+printf "iteration: %d, " (snd best_out);;
 print_solution (fst best_out);
 printf "\n";;
 
