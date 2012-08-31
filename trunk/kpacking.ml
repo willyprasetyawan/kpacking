@@ -95,7 +95,7 @@ let params = {pop_size = !opt_pop_size;
               max_iterations = !opt_max_iterations;
               first_population_style = !opt_first_generation_style;
               solution = !opt_solution};;
-let () = if (!verbose) then printf "population size = %d\n\
+let () = if (!verbose) then printf "population size = %d\
                                     chance of crossover = %f\n\
                                     chance of mutation = %f\n\
                                     iterations = %d\n\
